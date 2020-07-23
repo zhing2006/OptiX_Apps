@@ -521,12 +521,12 @@ void Application::reshape(int width, int height)
     CU_CHECK( cuMemAlloc(&m_d_stateDenoiser, m_sizesDenoiser.stateSizeInBytes) );
 
     CU_CHECK( cuMemFree(m_d_scratchDenoiser) );
-    CU_CHECK( cuMemAlloc(&m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+    CU_CHECK( cuMemAlloc(&m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
     OPTIX_CHECK( m_api.optixDenoiserSetup(m_denoiser, m_cudaStream, 
                                           m_width, m_height, 
                                           m_d_stateDenoiser,   m_sizesDenoiser.stateSizeInBytes,
-                                          m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+                                          m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
     setDenoiserImages(); // Update the OptixImage2D structures for the individual layers.
 
@@ -914,7 +914,7 @@ bool Application::render()
 
 
     // Calculate the intensity on the outpuBuffer data.
-    OPTIX_CHECK( m_api.optixDenoiserComputeIntensity(m_denoiser, m_cudaStream, &m_inputImage[0], m_paramsDenoiser.hdrIntensity, m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+    OPTIX_CHECK( m_api.optixDenoiserComputeIntensity(m_denoiser, m_cudaStream, &m_inputImage[0], m_paramsDenoiser.hdrIntensity, m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
     //float hdrIntensity = 0.0f;
     //CU_CHECK( cuMemcpyDtoH(&hdrIntensity, m_paramsDenoiser.hdrIntensity, sizeof(float)) ); // DAR DEBUG 
@@ -934,7 +934,7 @@ bool Application::render()
       OPTIX_CHECK( m_api.optixDenoiserInvoke(m_denoiser, m_cudaStream, &m_paramsDenoiser,
                                              m_d_stateDenoiser, m_sizesDenoiser.stateSizeInBytes,
                                              &m_inputImage[0], m_numInputLayers, 0, 0, &m_outputImage,
-                                             m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+                                             m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
       CU_CHECK( cuGraphicsUnmapResources(1, &m_cudaGraphicsResource, m_cudaStream) ); // This is an implicit synchronizeStream!
     }
@@ -943,7 +943,7 @@ bool Application::render()
       OPTIX_CHECK( m_api.optixDenoiserInvoke(m_denoiser, m_cudaStream, &m_paramsDenoiser,
                                              m_d_stateDenoiser, m_sizesDenoiser.stateSizeInBytes,
                                              &m_inputImage[0], m_numInputLayers, 0, 0, &m_outputImage,
-                                             m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+                                             m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
     }
   }
 
@@ -2118,7 +2118,7 @@ void Application::initPipeline()
 #else // DEBUG
   pipelineLinkOptions.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
-  pipelineLinkOptions.overrideUsesMotionBlur = 0;
+  //pipelineLinkOptions.overrideUsesMotionBlur = 0;
 
   OPTIX_CHECK( m_api.optixPipelineCreate(m_context, &pipelineCompileOptions, &pipelineLinkOptions, programGroups.data(), (unsigned int) programGroups.size(), nullptr, nullptr, &m_pipeline) );
 
@@ -2403,11 +2403,11 @@ void Application::initDenoiser()
   optionsDenoiser.inputKind = OPTIX_DENOISER_INPUT_RGB_ALBEDO_NORMAL;
 #endif
 
-#if USE_FP32_OUTPUT
-  optionsDenoiser.pixelFormat = OPTIX_PIXEL_FORMAT_FLOAT4;
-#else
-  optionsDenoiser.pixelFormat = OPTIX_PIXEL_FORMAT_HALF4;
-#endif
+//#if USE_FP32_OUTPUT
+//  optionsDenoiser.pixelFormat = OPTIX_PIXEL_FORMAT_FLOAT4;
+//#else
+//  optionsDenoiser.pixelFormat = OPTIX_PIXEL_FORMAT_HALF4;
+//#endif
 
   OPTIX_CHECK( m_api.optixDenoiserCreate(m_context, &optionsDenoiser, &m_denoiser) );
   
@@ -2421,12 +2421,12 @@ void Application::initDenoiser()
   CU_CHECK( cuMemAlloc(&m_d_stateDenoiser, m_sizesDenoiser.stateSizeInBytes) );
   
   MY_ASSERT(m_d_scratchDenoiser == 0);
-  CU_CHECK( cuMemAlloc(&m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+  CU_CHECK( cuMemAlloc(&m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
   OPTIX_CHECK( m_api.optixDenoiserSetup(m_denoiser, m_cudaStream, 
                                         m_width, m_height, 
                                         m_d_stateDenoiser,   m_sizesDenoiser.stateSizeInBytes,
-                                        m_d_scratchDenoiser, m_sizesDenoiser.recommendedScratchSizeInBytes) );
+                                        m_d_scratchDenoiser, m_sizesDenoiser.withoutOverlapScratchSizeInBytes) );
 
   m_paramsDenoiser.denoiseAlpha = 0;    // Don't touch alpha.
   m_paramsDenoiser.blendFactor  = 0.0f; // Show the denoised image only.

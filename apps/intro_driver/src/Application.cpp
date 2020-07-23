@@ -2015,7 +2015,7 @@ void Application::initPipeline()
 #else // DEBUG
   pipelineLinkOptions.debugLevel             = OPTIX_COMPILE_DEBUG_LEVEL_FULL;
 #endif
-  pipelineLinkOptions.overrideUsesMotionBlur = 0;
+  //pipelineLinkOptions.overrideUsesMotionBlur = 0;
 
   OPTIX_CHECK( m_api.optixPipelineCreate(m_context, &pipelineCompileOptions, &pipelineLinkOptions, programGroups.data(), (unsigned int) programGroups.size(), nullptr, nullptr, &m_pipeline) );
 

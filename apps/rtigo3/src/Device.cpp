@@ -792,7 +792,7 @@ void Device::initPipeline()
 #else
   plo.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
 #endif
-  plo.overrideUsesMotionBlur = 0;
+  //plo.overrideUsesMotionBlur = 0;
 
   OPTIX_CHECK( m_api.optixPipelineCreate(m_optixContext, &pco, &plo, programGroups.data(), (unsigned int) programGroups.size(), nullptr, nullptr, &m_pipeline) );
 
